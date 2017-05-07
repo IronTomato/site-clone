@@ -1,0 +1,1 @@
+java -jar ./site-clone-0.0.1-SNAPSHOT.jar
