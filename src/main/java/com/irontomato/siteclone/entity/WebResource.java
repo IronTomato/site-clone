@@ -19,12 +19,11 @@ public class WebResource {
     @Column(unique = true)
     private String urlDigest;
 
+    private String contentDigest;
+
     private Date createTime;
 
     private Date updateTime;
-
-    @Column(columnDefinition = "MEDIUMBLOB")
-    private byte[] content;
 
     private String mediaType;
 
@@ -55,20 +54,20 @@ public class WebResource {
         this.urlDigest = urlDigest;
     }
 
+    public String getContentDigest() {
+        return contentDigest;
+    }
+
+    public void setContentDigest(String contentDigest) {
+        this.contentDigest = contentDigest;
+    }
+
     public Date getCreateTime() {
         return createTime;
     }
 
     public void setCreateTime(Date createTime) {
         this.createTime = createTime;
-    }
-
-    public byte[] getContent() {
-        return content;
-    }
-
-    public void setContent(byte[] content) {
-        this.content = content;
     }
 
     public String getMediaType() {

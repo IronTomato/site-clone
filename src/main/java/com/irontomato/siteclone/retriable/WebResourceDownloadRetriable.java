@@ -2,6 +2,7 @@ package com.irontomato.siteclone.retriable;
 
 import com.irontomato.siteclone.common.CommonUtils;
 import com.irontomato.siteclone.common.DateUtils;
+import com.irontomato.siteclone.common.FileManager;
 import com.irontomato.siteclone.entity.WebResource;
 import com.irontomato.siteclone.repository.WebResourceRepository;
 import org.apache.http.HttpResponse;
@@ -23,6 +24,8 @@ public class WebResourceDownloadRetriable extends Retriable {
     private WebResourceRepository webResourceRepository;
 
     private RetriableExecutor retriableExecutor;
+
+    private FileManager fileManager;
 
     private String url;
 
@@ -46,6 +49,11 @@ public class WebResourceDownloadRetriable extends Retriable {
     @Autowired
     public void setRetriableExecutor(RetriableExecutor retriableExecutor) {
         this.retriableExecutor = retriableExecutor;
+    }
+
+    @Autowired
+    public void setFileManager(FileManager fileManager) {
+        this.fileManager = fileManager;
     }
 
     public void setUrl(String url) {
@@ -94,9 +102,10 @@ public class WebResourceDownloadRetriable extends Retriable {
         WebResource res = webResourceRepository.findByUrlDigest(urlDigeset);
         res.setUrlDigest(urlDigeset);
         res.setMediaType(mediaType);
-        res.setContent(content);
         res.setUpdateTime(DateUtils.now());
         res.setDownloaded(true);
+        String contentDigest = fileManager.store(content);
+        res.setContentDigest(contentDigest);
         webResourceRepository.save(res);
     }
 }

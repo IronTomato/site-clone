@@ -3,6 +3,7 @@ package com.irontomato.siteclone.service.impl;
 import com.irontomato.siteclone.analyze.AnalyzeResult;
 import com.irontomato.siteclone.analyze.HtmlAnalyzer;
 import com.irontomato.siteclone.common.CommonUtils;
+import com.irontomato.siteclone.common.FileManager;
 import com.irontomato.siteclone.common.UrlDigestCache;
 import com.irontomato.siteclone.entity.WebResource;
 import com.irontomato.siteclone.entity.dto.WebResourceDto;
@@ -31,6 +32,8 @@ public class WebResourceServiceImpl implements WebResourceService {
 
     private WebResourceDowloadRetriableFactory webResourceDowloadRetriableFactory;
 
+    private FileManager fileManager;
+
     @Autowired
     public void setWebResourceRepository(WebResourceRepository webResourceRepository) {
         this.webResourceRepository = webResourceRepository;
@@ -56,6 +59,11 @@ public class WebResourceServiceImpl implements WebResourceService {
         this.webResourceDowloadRetriableFactory = webResourceDowloadRetriableFactory;
     }
 
+    @Autowired
+    public void setFileManager(FileManager fileManager) {
+        this.fileManager = fileManager;
+    }
+
     @Override
     public Optional<WebResourceDto> get(String urlDigest) {
         WebResource res = webResourceRepository.findByUrlDigest(urlDigest);
@@ -65,19 +73,23 @@ public class WebResourceServiceImpl implements WebResourceService {
 
         WebResourceDto dto = new WebResourceDto();
         BeanUtils.copyProperties(res, dto);
-        if (res.isDownloaded() && MediaType.TEXT_HTML_VALUE.equalsIgnoreCase(res.getMediaType())) {
-            String html = new String(res.getContent());
+        if (dto.isDownloaded()){
+            dto.setContent(fileManager.getAsBytes(res.getContentDigest()));
 
-            AnalyzeResult analyzeResult = htmlAnalyzer.analyze(res.getUrl(), html);
-            dto.setContent(analyzeResult.getParsedHtml().getBytes());
+            if (MediaType.TEXT_HTML_VALUE.equalsIgnoreCase(dto.getMediaType())) {
+                String html = new String(dto.getContent());
 
-            analyzeResult.getRelatedUrls().forEach(u -> {
-                String digest = CommonUtils.digest(u);
-                if (!urlDigestCache.contains(digest)) {
-                    retriableExecutor.execute(webResourceDowloadRetriableFactory.create(u));
-                    urlDigestCache.add(digest);
-                }
-            });
+                AnalyzeResult analyzeResult = htmlAnalyzer.analyze(dto.getUrl(), html);
+                dto.setContent(analyzeResult.getParsedHtml().getBytes());
+
+                analyzeResult.getRelatedUrls().forEach(u -> {
+                    String digest = CommonUtils.digest(u);
+                    if (!urlDigestCache.contains(digest)) {
+                        retriableExecutor.execute(webResourceDowloadRetriableFactory.create(u));
+                        urlDigestCache.add(digest);
+                    }
+                });
+            }
         }
         return Optional.of(dto);
     }
